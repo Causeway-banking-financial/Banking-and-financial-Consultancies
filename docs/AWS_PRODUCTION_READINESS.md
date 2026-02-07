@@ -33,6 +33,7 @@ with strict security and resilience expectations.
 
 - VPCs segmented by environment and trust zone
 - Ingress restricted through CloudFront and WAF
+- WAF managed rules and rate limiting configured
 - Security groups and NACLs reviewed and documented
 - Private subnets for data stores and internal services
 
@@ -42,6 +43,7 @@ with strict security and resilience expectations.
 - Autoscaling configured with tested limits
 - Immutable images or deployable artifacts
 - No SSH access to production hosts
+- Base images patched and refreshed on a defined cadence
 
 ### Data protection
 
@@ -49,6 +51,7 @@ with strict security and resilience expectations.
 - TLS 1.2+ for all ingress and service-to-service traffic
 - Backups automated and tested with restore drills
 - Data retention and deletion policies documented
+- KMS key access logged and key rotation enabled
 
 ### Observability and operations
 
@@ -57,12 +60,25 @@ with strict security and resilience expectations.
 - Alert routing and on-call coverage defined
 - Incident runbook reviewed and accessible
 
+### Security posture and vulnerability management
+
+- Image and dependency scanning enabled
+- SAST/DAST applied where applicable
+- Patch management process defined and tracked
+- Secrets rotation policy documented and followed
+
 ### CI/CD and change management
 
 - Infrastructure as code used for all AWS resources
 - Automated security and configuration checks in CI
 - Manual approval gate for production deploys
 - Rollback strategy documented and tested
+
+### Compliance and audit
+
+- Evidence collection for key controls automated
+- Log retention meets policy and audit requirements
+- Access reviews performed on a scheduled cadence
 
 ### Resilience and disaster recovery
 

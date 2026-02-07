@@ -13,9 +13,15 @@ docs/                     Core documentation
     0000-template.md
   AWS_PRODUCTION_READINESS.md
   DATA_CLASSIFICATION.md
+  DEPLOYMENT.md
+  DOMAIN_SETUP.md
+  GO_LIVE_CHECKLIST.md
   OPERATIONS_RUNBOOK.md
   REPOSITORY_STANDARDS.md
 .github/                  Code ownership and templates
+  ISSUE_TEMPLATE/
+  PULL_REQUEST_TEMPLATE.md
+infrastructure/           IaC baseline
 README.md                 Project overview and entry point
 SECURITY.md               Vulnerability reporting
 CONTRIBUTING.md           Contribution rules
@@ -28,6 +34,13 @@ CONTRIBUTING.md           Contribution rules
 - At least one reviewer approval is required for merge.
 - Code owners are required for changes touching security, infra, or data access.
 - All checks must pass before merge.
+
+## Repository settings
+
+- Require signed or verified commits where possible.
+- Enable secret scanning and push protection.
+- Enable dependency alerts and automated security updates.
+- Enforce CODEOWNERS reviews for protected paths.
 
 ## Commit and change hygiene
 
