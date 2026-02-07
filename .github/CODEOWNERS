@@ -1,3 +1,6 @@
 # Default owners for the repository.
-# Replace @your-github-handle with the correct GitHub user or team.
+# Replace placeholders with the correct GitHub users or teams before production.
 * @your-github-handle
+/docs/ @your-docs-owner
+/infrastructure/ @your-platform-owner
+/.github/ @your-platform-owner
