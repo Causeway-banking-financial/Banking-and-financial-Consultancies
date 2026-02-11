@@ -156,7 +156,7 @@ spec:
       name: Fetch Service Template
       action: fetch:template
       input:
-        url: ./service-template
+        url: ../service-template
         values:
           serviceName: ${{ parameters.serviceName }}
           serviceTier: ${{ parameters.serviceTier }}

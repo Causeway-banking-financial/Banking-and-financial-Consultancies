@@ -53,6 +53,7 @@ jobs:
         id: plan
         working-directory: infrastructure/environments/${{ matrix.environment }}
         run: |
+          set +e
           terraform plan -input=false -no-color -out=tfplan 2>&1 | tee plan-output.txt
           echo "plan_exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
         continue-on-error: true
@@ -72,13 +73,13 @@ jobs:
 
             const body = `### Terraform Plan — \`${{ matrix.environment }}\`
 
-            \`\`\`
-            ${truncated}
-            \`\`\`
+\`\`\`
+${truncated}
+\`\`\`
 
-            *Triggered by @${{ github.actor }} in ${{ github.sha }}*`;
+*Triggered by @${{ github.actor }} in ${{ github.sha }}*`;
 
-            github.rest.issues.createComment({
+            await github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
