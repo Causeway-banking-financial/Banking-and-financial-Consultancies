@@ -5,6 +5,7 @@ on:
     paths:
       - "**/*.md"
       - ".markdownlint.json"
+      - ".cspell.json"
       - ".github/workflows/docs-lint.yml"
   push:
     branches:
