@@ -61,6 +61,9 @@ docs/
   ARCHITECTURE.md
   adr/
     0000-template.md
+    0001-default-compute-ecs-fargate.md
+    0002-rto-rpo-targets-by-service-tier.md
+    0003-cross-region-dr-strategy.md
   AWS_PRODUCTION_READINESS.md
   DATA_CLASSIFICATION.md
   DEPLOYMENT.md
@@ -69,11 +72,23 @@ docs/
   OPERATIONS_RUNBOOK.md
   REPOSITORY_STANDARDS.md
 .github/
+  workflows/
+    docs-lint.yml
   ISSUE_TEMPLATE/
   PULL_REQUEST_TEMPLATE.md
 infrastructure/
   README.md
 ```
+
+## Architecture decisions
+
+Key decisions are recorded as ADRs in `docs/adr/`:
+
+| ADR | Decision |
+|-----|----------|
+| [0001](docs/adr/0001-default-compute-ecs-fargate.md) | ECS Fargate as default compute platform |
+| [0002](docs/adr/0002-rto-rpo-targets-by-service-tier.md) | RTO/RPO targets by service tier (Tier 1-3) |
+| [0003](docs/adr/0003-cross-region-dr-strategy.md) | Cross-region DR: active-passive, pilot light, backup-restore |
 
 ## AWS production-ready baseline
 

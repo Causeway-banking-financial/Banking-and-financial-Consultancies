@@ -40,8 +40,14 @@ Client -> CloudFront/WAF -> ALB -> Service tier -> Data tier
 - Auto scaling policies are defined and tested.
 - Stateless services preferred for rapid recovery.
 
-## Open decisions
+## Resolved decisions
 
-- Final compute choice per service (ECS/EKS/Lambda)
-- RTO/RPO targets by service tier
-- Cross-region DR activation strategy
+The following decisions are recorded as Architecture Decision Records in `docs/adr/`:
+
+- **Compute platform:** ECS Fargate is the default. Lambda is permitted for
+  event-driven workloads. EKS is deferred. See [ADR-0001](adr/0001-default-compute-ecs-fargate.md).
+- **RTO/RPO targets:** Three service tiers with targets ranging from 15min/1min
+  (Tier 1) to 4hr/1hr (Tier 3). See [ADR-0002](adr/0002-rto-rpo-targets-by-service-tier.md).
+- **DR strategy:** Active-passive warm standby for Tier 1, pilot light for
+  Tier 2, backup-and-restore for Tier 3. Primary region eu-west-1, DR region
+  eu-west-2. See [ADR-0003](adr/0003-cross-region-dr-strategy.md).

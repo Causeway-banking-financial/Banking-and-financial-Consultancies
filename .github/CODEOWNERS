@@ -1,6 +1,21 @@
-# Default owners for the repository.
-# Replace placeholders with the correct GitHub users or teams before production.
-* @your-github-handle
-/docs/ @your-docs-owner
-/infrastructure/ @your-platform-owner
-/.github/ @your-platform-owner
+# Code ownership for Causeway Banking Financial.
+# These teams are required reviewers for changes to their owned paths.
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default: platform engineering team owns everything not otherwise specified
+* @Causeway-banking-financial/platform-engineering
+
+# Documentation standards and architectural guidance
+/docs/ @Causeway-banking-financial/platform-engineering @Causeway-banking-financial/architecture
+/docs/adr/ @Causeway-banking-financial/architecture
+
+# Infrastructure as code
+/infrastructure/ @Causeway-banking-financial/platform-engineering
+
+# CI/CD and repository configuration
+/.github/ @Causeway-banking-financial/platform-engineering
+
+# Security-sensitive files require security team review
+SECURITY.md @Causeway-banking-financial/security
+/docs/DATA_CLASSIFICATION.md @Causeway-banking-financial/security @Causeway-banking-financial/architecture
+/docs/AWS_PRODUCTION_READINESS.md @Causeway-banking-financial/platform-engineering @Causeway-banking-financial/security
