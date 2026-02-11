@@ -459,15 +459,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). All changes require PR review from
 [CODEOWNERS](.github/CODEOWNERS). Security-sensitive changes require
 `@Causeway-banking-financial/security` approval.
 
-## Pending: Yemen Economic Transparency Observatory
-
-The `@Yemen-Economic-Transparency-Observatory (1).pdf` referenced in the project
-brief has not yet been uploaded to this repository. If this document defines
-additional requirements — such as specific economic indicators to ingest, public
-API specifications, or transparency reporting standards — please upload it so
-the platform design and data ingestion strategy can be updated to reflect those
-requirements.
-
 ## Support
 
 Open an [issue](../../issues) with details, or contact the platform engineering

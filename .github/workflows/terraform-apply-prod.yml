@@ -21,6 +21,12 @@ jobs:
     name: Validate confirmation
     runs-on: ubuntu-latest
     steps:
+      - name: Check branch is main
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::Production deployments must be triggered from the main branch only."
+          exit 1
+
       - name: Check confirmation input
         if: github.event.inputs.confirm != 'apply'
         run: |
