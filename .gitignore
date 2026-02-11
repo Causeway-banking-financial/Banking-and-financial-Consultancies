@@ -1,6 +1,7 @@
 .DS_Store
 .env
-.env.*
+.env.local
+.env.*.local
 .idea/
 .vscode/
 *.log
@@ -16,6 +17,7 @@ yarn-error.log*
 dist/
 build/
 coverage/
+.next/
 
 # Python
 __pycache__/
@@ -27,6 +29,11 @@ venv/
 .terraform/
 *.tfstate
 *.tfstate.*
+*.tfvars
 
 # OS
 Thumbs.db
+
+# Docker
+postgres_data/
+minio_data/
