@@ -76,12 +76,20 @@ resource "aws_security_group" "alb" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  ingress {
+    description = "HTTP for redirect to HTTPS"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   egress {
-    description = "Allow all outbound to VPC"
+    description = "Allow outbound to private subnets (backend targets)"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = [data.aws_vpc.selected.cidr_block]
   }
 
   lifecycle {
@@ -115,6 +123,28 @@ resource "aws_lb" "main" {
   tags = merge(local.common_tags, {
     Name = "${local.name_prefix}-alb"
   })
+}
+
+data "aws_vpc" "selected" {
+  id = var.vpc_id
+}
+
+# HTTP listener — redirect all traffic to HTTPS
+resource "aws_lb_listener" "http" {
+  load_balancer_arn = aws_lb.main.arn
+  port              = 80
+  protocol          = "HTTP"
+
+  default_action {
+    type = "redirect"
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
+  }
+
+  tags = local.common_tags
 }
 
 resource "aws_lb_listener" "https" {
@@ -153,9 +183,9 @@ resource "aws_security_group" "ecs_tasks" {
   description = "Baseline security group for ECS Fargate tasks"
 
   ingress {
-    description     = "Allow traffic from ALB"
-    from_port       = 0
-    to_port         = 65535
+    description     = "Allow application traffic from ALB"
+    from_port       = 8080
+    to_port         = 8080
     protocol        = "tcp"
     security_groups = [aws_security_group.alb.id]
   }

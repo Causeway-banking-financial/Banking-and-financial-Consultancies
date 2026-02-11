@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+env:
+  SERVICE_NAME: ${{ vars.SERVICE_NAME || github.event.repository.name }}
+  AWS_REGION: eu-west-1
+
 jobs:
   test:
     name: Lint, typecheck, test
@@ -20,11 +24,11 @@ jobs:
         with:
           node-version: "20"
           cache: "npm"
-          cache-dependency-path: app/package-lock.json
+          cache-dependency-path: app/package.json
 
       - name: Install dependencies
         working-directory: app
-        run: npm ci
+        run: npm install
 
       - name: Lint
         working-directory: app
@@ -48,12 +52,12 @@ jobs:
 
       - name: Build Docker image
         working-directory: app
-        run: docker build -t ${{ github.repository }}:${{ github.sha }} .
+        run: docker build -t ${{ env.SERVICE_NAME }}:${{ github.sha }} .
 
       - name: Run Trivy vulnerability scan
         uses: aquasecurity/trivy-action@0.28.0
         with:
-          image-ref: "${{ github.repository }}:${{ github.sha }}"
+          image-ref: "${{ env.SERVICE_NAME }}:${{ github.sha }}"
           format: "sarif"
           output: "trivy-results.sarif"
           severity: "CRITICAL,HIGH"
@@ -76,7 +80,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.DEPLOY_ROLE_ARN }}
-          aws-region: eu-west-1
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Login to ECR
         id: ecr
@@ -85,13 +89,13 @@ jobs:
       - name: Build and push image
         working-directory: app
         run: |
-          IMAGE="${{ steps.ecr.outputs.registry }}/causeway-banking/${{ github.event.repository.name }}:${{ github.sha }}"
+          IMAGE="${{ steps.ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY || format('causeway-banking/{0}', env.SERVICE_NAME) }}:${{ github.sha }}"
           docker build -t "$IMAGE" .
           docker push "$IMAGE"
 
       - name: Deploy to ECS
         run: |
           aws ecs update-service \
-            --cluster causeway-banking-nonprod-cluster \
-            --service causeway-banking-nonprod-${{ github.event.repository.name }} \
+            --cluster "${{ vars.ECS_CLUSTER || 'causeway-banking-nonprod-cluster' }}" \
+            --service "${{ vars.ECS_SERVICE || format('causeway-banking-nonprod-{0}', env.SERVICE_NAME) }}" \
             --force-new-deployment

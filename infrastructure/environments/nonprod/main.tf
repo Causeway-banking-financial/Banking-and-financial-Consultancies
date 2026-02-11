@@ -117,7 +117,7 @@ module "observability" {
   environment = "nonprod"
 
   ecs_cluster_name = module.compute.ecs_cluster_name
-  alb_arn_suffix   = module.compute.alb_arn
+  alb_arn_suffix   = module.compute.alb_arn_suffix
   aurora_cluster_id = module.data.aurora_cluster_id
 
   log_retention_days       = 30
