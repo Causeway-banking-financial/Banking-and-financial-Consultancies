@@ -1,0 +1,59 @@
+name: Terraform Apply (prod)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: "Type 'apply' to confirm production deployment"
+        required: true
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  TF_VERSION: "1.7.0"
+  AWS_REGION: "eu-west-1"
+  WORKING_DIR: "infrastructure/environments/prod"
+
+jobs:
+  validate-confirmation:
+    name: Validate confirmation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check confirmation input
+        if: github.event.inputs.confirm != 'apply'
+        run: |
+          echo "::error::You must type 'apply' to confirm production deployment."
+          exit 1
+
+  apply:
+    name: Apply to prod
+    needs: validate-confirmation
+    runs-on: ubuntu-latest
+    environment: production  # Requires manual approval in GitHub environment settings
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.TERRAFORM_APPLY_ROLE_ARN_PROD }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform init
+        working-directory: ${{ env.WORKING_DIR }}
+        run: terraform init -input=false
+
+      - name: Terraform plan
+        working-directory: ${{ env.WORKING_DIR }}
+        run: terraform plan -input=false -out=tfplan
+
+      - name: Terraform apply
+        working-directory: ${{ env.WORKING_DIR }}
+        run: terraform apply -input=false tfplan

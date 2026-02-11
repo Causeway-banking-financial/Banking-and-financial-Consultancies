@@ -1,0 +1,190 @@
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: causeway-banking-financial
+  description: Production-grade AWS platform for Causeway Banking Financial digital services
+  annotations:
+    github.com/project-slug: Causeway-banking-financial/Banking-and-financial-Consultancies
+    backstage.io/techdocs-ref: dir:.
+  tags:
+    - aws
+    - financial-services
+    - platform
+  links:
+    - url: https://finance.causewaygrp.com
+      title: Production Site
+    - url: https://eu-west-1.console.aws.amazon.com/cloudwatch/home?region=eu-west-1#dashboards:name=causeway-banking-prod-overview
+      title: Production Dashboard
+spec:
+  owner: group:platform-engineering
+  domain: banking-financial
+
+---
+apiVersion: backstage.io/v1alpha1
+kind: Domain
+metadata:
+  name: banking-financial
+  description: Banking and financial consultancy services
+spec:
+  owner: group:platform-engineering
+
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: platform-engineering
+  description: Platform engineering team — owns infrastructure, CI/CD, and platform standards
+spec:
+  type: team
+  children: []
+
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: architecture
+  description: Architecture team — owns ADRs, reference architecture, and design standards
+spec:
+  type: team
+  children: []
+
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: security
+  description: Security team — owns security policy, data classification, and compliance
+spec:
+  type: team
+  children: []
+
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: causeway-banking-vpc
+  description: VPC and network infrastructure for the platform
+  tags:
+    - aws
+    - networking
+spec:
+  type: infrastructure
+  owner: group:platform-engineering
+  system: causeway-banking-financial
+
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: causeway-banking-ecs-cluster
+  description: ECS Fargate cluster for running containerised services
+  tags:
+    - aws
+    - ecs
+    - fargate
+spec:
+  type: infrastructure
+  owner: group:platform-engineering
+  system: causeway-banking-financial
+
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: causeway-banking-aurora
+  description: Aurora PostgreSQL cluster for relational data (multi-AZ, encrypted)
+  tags:
+    - aws
+    - aurora
+    - postgresql
+spec:
+  type: database
+  owner: group:platform-engineering
+  system: causeway-banking-financial
+
+---
+# Template for onboarding new services via Backstage Software Templates
+apiVersion: backstage.io/v1alpha1
+kind: Template
+metadata:
+  name: causeway-service-template
+  title: Causeway Banking Service
+  description: >
+    Scaffold a new service for the Causeway Banking Financial platform.
+    Includes Dockerfile, Terraform module, CI/CD pipeline, and test harness.
+  tags:
+    - recommended
+    - nodejs
+    - typescript
+    - ecs-fargate
+spec:
+  owner: group:platform-engineering
+  type: service
+
+  parameters:
+    - title: Service Details
+      required:
+        - serviceName
+        - serviceTier
+        - owner
+      properties:
+        serviceName:
+          title: Service Name
+          type: string
+          description: Unique name for the service (lowercase, hyphens only)
+          pattern: "^[a-z][a-z0-9-]*$"
+        serviceTier:
+          title: Service Tier
+          type: string
+          description: Per ADR-0002 — determines RTO/RPO and infrastructure sizing
+          enum:
+            - tier-1
+            - tier-2
+            - tier-3
+        owner:
+          title: Owner
+          type: string
+          description: Team that owns this service
+          ui:field: OwnerPicker
+        description:
+          title: Description
+          type: string
+          description: Brief description of the service
+
+  steps:
+    - id: fetch
+      name: Fetch Service Template
+      action: fetch:template
+      input:
+        url: ./service-template
+        values:
+          serviceName: ${{ parameters.serviceName }}
+          serviceTier: ${{ parameters.serviceTier }}
+          owner: ${{ parameters.owner }}
+          description: ${{ parameters.description }}
+
+    - id: publish
+      name: Create Repository
+      action: publish:github
+      input:
+        allowedHosts:
+          - github.com
+        repoUrl: github.com?owner=Causeway-banking-financial&repo=${{ parameters.serviceName }}
+        defaultBranch: main
+        protectDefaultBranch: true
+        requireCodeOwnerReviews: true
+
+    - id: register
+      name: Register in Catalog
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
+        catalogInfoPath: /catalog-info.yaml
+
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps.publish.output.remoteUrl }}
+      - title: Catalog Entry
+        icon: catalog
+        entityRef: ${{ steps.register.output.entityRef }}

@@ -58,9 +58,11 @@ Observability (CloudWatch, X-Ray, central logs)
 
 ```
 docs/
-  ARCHITECTURE.md
+  ARCHITECTURE.md             Reference architecture with Mermaid diagrams
+  THREAT_MODEL.md             STRIDE-based threat model
+  COMPLIANCE_MAPPING.md       PCI-DSS, FCA, UK GDPR control mapping
+  CHAOS_ENGINEERING.md        Gameday strategy and FIS experiments
   adr/
-    0000-template.md
     0001-default-compute-ecs-fargate.md
     0002-rto-rpo-targets-by-service-tier.md
     0003-cross-region-dr-strategy.md
@@ -69,15 +71,35 @@ docs/
   DEPLOYMENT.md
   DOMAIN_SETUP.md
   GO_LIVE_CHECKLIST.md
-  OPERATIONS_RUNBOOK.md
+  OPERATIONS_RUNBOOK.md       Detailed runbooks for 8 incident scenarios
   REPOSITORY_STANDARDS.md
+infrastructure/
+  modules/
+    networking/               VPC, subnets, NAT, NACLs, flow logs
+    compute/                  ECS Fargate cluster, ALB, security groups
+    data/                     Aurora PostgreSQL, DynamoDB, S3
+    security/                 KMS CMK, WAF Web ACL, IAM roles
+    observability/            CloudWatch dashboard, alarms, SNS
+  environments/
+    nonprod/                  2 AZs, cost-optimised
+    prod/                     3 AZs, HA, stricter thresholds
+  shared/ci-cd/               GitHub OIDC, state buckets, IAM roles
+  policy/                     AWS Config rules (12 compliance checks)
+  cost-guardrails/            Budgets, anomaly detection, tag enforcement
+  chaos-engineering/          AWS FIS experiment templates
+service-template/
+  app/                        Dockerfile, Express/TypeScript server
+  terraform/                  ECS service module with autoscaling
+  .github/workflows/ci.yml   Lint, test, build, scan, deploy pipeline
+  tests/                      Baseline health endpoint tests
+backstage/
+  catalog-info.yaml           Backstage entity catalog and service template
 .github/
   workflows/
-    docs-lint.yml
-  ISSUE_TEMPLATE/
-  PULL_REQUEST_TEMPLATE.md
-infrastructure/
-  README.md
+    docs-lint.yml             Markdown lint, spell check, link check
+    terraform-plan.yml        Plan on PR, comment diff
+    terraform-apply-nonprod.yml  Auto-apply on merge to main
+    terraform-apply-prod.yml     Manual trigger with approval gate
 ```
 
 ## Architecture decisions
