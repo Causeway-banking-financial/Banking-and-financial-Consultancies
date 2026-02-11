@@ -1,0 +1,167 @@
+{
+  "common": {
+    "home": "Home",
+    "about": "About",
+    "services": "Services",
+    "observatory": "Observatory",
+    "insights": "Insights",
+    "contact": "Contact",
+    "resources": "Resources",
+    "readMore": "Read More",
+    "learnMore": "Learn More",
+    "viewAll": "View All",
+    "search": "Search",
+    "filter": "Filter",
+    "noResults": "No results found",
+    "loading": "Loading...",
+    "language": "Language",
+    "english": "English",
+    "arabic": "العربية",
+    "allCategories": "All Categories",
+    "featured": "Featured",
+    "latest": "Latest",
+    "download": "Download",
+    "share": "Share",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "showMore": "Show More",
+    "showLess": "Show Less",
+    "copyright": "© {year} CauseWay Financial Consulting. All rights reserved.",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service"
+  },
+  "home": {
+    "hero": {
+      "title": "Navigating Financial Futures",
+      "subtitle": "Strategic consulting for banking and financial institutions across the MENA region",
+      "cta": "Explore Our Services",
+      "secondaryCta": "View Resources"
+    },
+    "services": {
+      "title": "Our Services",
+      "subtitle": "Comprehensive financial consulting solutions tailored to your needs"
+    },
+    "featured": {
+      "title": "Featured Resources",
+      "subtitle": "Latest insights and publications from our team"
+    },
+    "stats": {
+      "years": "Years Experience",
+      "clients": "Clients Served",
+      "countries": "Countries",
+      "reports": "Reports Published"
+    },
+    "cta": {
+      "title": "Ready to Transform Your Financial Strategy?",
+      "subtitle": "Connect with our team of experts to discuss your needs",
+      "button": "Get in Touch"
+    }
+  },
+  "about": {
+    "title": "About CauseWay",
+    "subtitle": "Bridging Financial Expertise Across the Region",
+    "mission": {
+      "title": "Our Mission",
+      "text": "To provide world-class financial consulting that empowers institutions to navigate complex regulatory landscapes and achieve sustainable growth."
+    },
+    "vision": {
+      "title": "Our Vision",
+      "text": "To be the leading financial advisory bridge connecting global best practices with regional expertise across the MENA region."
+    },
+    "values": {
+      "title": "Our Values",
+      "integrity": "Integrity",
+      "integrityDesc": "We uphold the highest ethical standards in all our engagements.",
+      "excellence": "Excellence",
+      "excellenceDesc": "We deliver exceptional quality in every project we undertake.",
+      "innovation": "Innovation",
+      "innovationDesc": "We leverage cutting-edge approaches to solve complex financial challenges.",
+      "partnership": "Partnership",
+      "partnershipDesc": "We build lasting relationships founded on trust and mutual success."
+    }
+  },
+  "services": {
+    "title": "Our Services",
+    "subtitle": "Comprehensive Solutions for Financial Institutions",
+    "regulatory": {
+      "title": "Regulatory Advisory",
+      "description": "Navigate complex regulatory frameworks with confidence. We provide guidance on compliance, licensing, and regulatory strategy."
+    },
+    "strategy": {
+      "title": "Strategic Planning",
+      "description": "Develop robust business strategies aligned with market dynamics and regulatory requirements across the MENA region."
+    },
+    "risk": {
+      "title": "Risk Management",
+      "description": "Identify, assess, and mitigate financial risks with our comprehensive risk management frameworks and solutions."
+    },
+    "digital": {
+      "title": "Digital Transformation",
+      "description": "Modernize your financial operations with digital solutions that enhance efficiency, security, and customer experience."
+    },
+    "governance": {
+      "title": "Corporate Governance",
+      "description": "Establish strong governance frameworks that ensure transparency, accountability, and regulatory compliance."
+    },
+    "training": {
+      "title": "Training & Development",
+      "description": "Build organizational capacity through specialized training programs designed for the financial services sector."
+    }
+  },
+  "observatory": {
+    "title": "Financial Observatory",
+    "subtitle": "Data-driven insights into the MENA financial landscape",
+    "description": "Our observatory tracks key metrics, regulatory developments, and market trends across the banking and financial services sector."
+  },
+  "insights": {
+    "title": "Insights",
+    "subtitle": "Expert analysis and thought leadership from our team",
+    "categories": "Categories",
+    "recentPosts": "Recent Posts"
+  },
+  "resources": {
+    "title": "Resources",
+    "subtitle": "Publications, reports, and knowledge resources",
+    "searchPlaceholder": "Search resources...",
+    "filterByCategory": "Filter by category",
+    "filterByType": "Filter by type",
+    "sortBy": "Sort by",
+    "sortLatest": "Latest First",
+    "sortOldest": "Oldest First",
+    "sortTitle": "Title A-Z",
+    "noResources": "No resources found matching your criteria.",
+    "downloadResource": "Download Resource",
+    "viewResource": "View Resource"
+  },
+  "contact": {
+    "title": "Contact Us",
+    "subtitle": "Get in touch with our team",
+    "form": {
+      "name": "Full Name",
+      "email": "Email Address",
+      "phone": "Phone Number",
+      "subject": "Subject",
+      "message": "Message",
+      "submit": "Send Message",
+      "success": "Thank you for your message. We'll respond shortly.",
+      "error": "Something went wrong. Please try again."
+    },
+    "info": {
+      "address": "Address",
+      "phone": "Phone",
+      "email": "Email",
+      "hours": "Working Hours"
+    }
+  },
+  "footer": {
+    "description": "CauseWay Financial Consulting provides expert advisory services to banking and financial institutions across the MENA region.",
+    "quickLinks": "Quick Links",
+    "contactInfo": "Contact Info",
+    "followUs": "Follow Us",
+    "newsletter": "Newsletter",
+    "newsletterDesc": "Subscribe to receive the latest insights and updates.",
+    "subscribe": "Subscribe",
+    "emailPlaceholder": "your@email.com"
+  }
+}

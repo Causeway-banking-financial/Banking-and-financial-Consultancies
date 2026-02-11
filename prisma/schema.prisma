@@ -1,0 +1,242 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── User & Auth ──────────────────────────────────────────────
+
+enum UserRole {
+  ADMIN
+  EDITOR
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  passwordHash  String
+  role          UserRole  @default(EDITOR)
+  active        Boolean   @default(true)
+  lastLoginAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  auditLogs     AuditLog[]
+  resources     Resource[]    @relation("ResourceCreator")
+  updatedResources Resource[] @relation("ResourceUpdater")
+
+  @@map("users")
+}
+
+// ─── Resources ────────────────────────────────────────────────
+
+enum PublishStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ResourceType {
+  REPORT
+  WHITEPAPER
+  ARTICLE
+  PRESENTATION
+  DATA
+  GUIDE
+  VIDEO
+  PODCAST
+  INFOGRAPHIC
+  OTHER
+}
+
+model Resource {
+  id              String        @id @default(cuid())
+  slug            String        @unique
+  status          PublishStatus @default(DRAFT)
+  type            ResourceType  @default(REPORT)
+  featured        Boolean       @default(false)
+  priority        Int           @default(0)
+
+  // English content
+  titleEn         String
+  descriptionEn   String?       @db.Text
+  contentEn       String?       @db.Text
+
+  // Arabic content
+  titleAr         String?
+  descriptionAr   String?       @db.Text
+  contentAr       String?       @db.Text
+
+  // SEO
+  metaTitleEn     String?
+  metaDescEn      String?
+  metaTitleAr     String?
+  metaDescAr      String?
+
+  // Metadata
+  publisher       String?
+  publishDate     DateTime?
+  year            Int?
+  externalUrl     String?
+  tags            String[]      @default([])
+
+  // File
+  fileUrl         String?
+  fileName        String?
+  fileSize        Int?
+  fileMimeType    String?
+
+  // Thumbnail
+  thumbnailUrl    String?
+
+  // Relations
+  categoryId      String?
+  category        Category?     @relation(fields: [categoryId], references: [id])
+
+  createdById     String?
+  createdBy       User?         @relation("ResourceCreator", fields: [createdById], references: [id])
+  updatedById     String?
+  updatedBy       User?         @relation("ResourceUpdater", fields: [updatedById], references: [id])
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  publishedAt     DateTime?
+
+  @@index([status, publishedAt])
+  @@index([categoryId])
+  @@index([type])
+  @@index([featured])
+  @@map("resources")
+}
+
+// ─── Categories ───────────────────────────────────────────────
+
+model Category {
+  id            String    @id @default(cuid())
+  slug          String    @unique
+  nameEn        String
+  nameAr        String?
+  descriptionEn String?   @db.Text
+  descriptionAr String?   @db.Text
+  icon          String?
+  color         String?
+  enabled       Boolean   @default(true)
+  sortOrder     Int       @default(0)
+
+  parentId      String?
+  parent        Category?   @relation("CategoryTree", fields: [parentId], references: [id])
+  children      Category[]  @relation("CategoryTree")
+
+  resources     Resource[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([enabled, sortOrder])
+  @@map("categories")
+}
+
+// ─── Pages (CMS) ──────────────────────────────────────────────
+
+model Page {
+  id            String        @id @default(cuid())
+  slug          String        @unique
+  status        PublishStatus @default(DRAFT)
+  template      String        @default("default")
+  sortOrder     Int           @default(0)
+  showInNav     Boolean       @default(false)
+
+  // English content
+  titleEn       String
+  contentEn     String?       @db.Text
+  blocksEn      Json?
+
+  // Arabic content
+  titleAr       String?
+  contentAr     String?       @db.Text
+  blocksAr      Json?
+
+  // SEO
+  metaTitleEn   String?
+  metaDescEn    String?
+  metaTitleAr   String?
+  metaDescAr    String?
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  publishedAt   DateTime?
+
+  @@index([status, slug])
+  @@map("pages")
+}
+
+// ─── Site Settings ────────────────────────────────────────────
+
+model SiteSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  valueEn   String?  @db.Text
+  valueAr   String?  @db.Text
+  type      String   @default("text")
+
+  updatedAt DateTime @updatedAt
+
+  @@map("site_settings")
+}
+
+// ─── File Uploads ─────────────────────────────────────────────
+
+model FileUpload {
+  id            String   @id @default(cuid())
+  originalName  String
+  storagePath   String
+  url           String
+  mimeType      String
+  size          Int
+  uploadedById  String?
+
+  createdAt     DateTime @default(now())
+
+  @@map("file_uploads")
+}
+
+// ─── Audit Log ────────────────────────────────────────────────
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  action      String
+  entityType  String
+  entityId    String?
+  details     Json?
+  ipAddress   String?
+
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
+
+  createdAt   DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ─── Health Check / Link Checker ──────────────────────────────
+
+model LinkCheck {
+  id          String   @id @default(cuid())
+  url         String
+  status      Int?
+  statusText  String?
+  sourceType  String
+  sourceId    String
+  lastChecked DateTime @default(now())
+  isBroken    Boolean  @default(false)
+
+  @@index([isBroken])
+  @@map("link_checks")
+}

@@ -1,142 +1,283 @@
-# Causeway Banking Financial
+# CauseWay Financial Consulting Platform
 
-Production-grade AWS hosting standards and operating model for Causeway
-Banking Financial digital services.
+A production-ready, dynamic, bilingual (English/Arabic) platform for CauseWay Financial Consulting — a strategic advisory firm serving banking and financial institutions across the MENA region.
 
-This repository defines the reference architecture, security baseline, and
-operational readiness requirements used to build, host, and operate financial
-workloads on AWS. It is intentionally documentation-first so delivery teams can
-align before implementation begins. Application code may live in separate
-service repositories that follow these standards.
+The platform provides expert insights on regulatory advisory, strategic planning, risk management, digital transformation, corporate governance, and training for the financial services sector.
 
-## Contents
+## What This Platform Does
 
-- [Scope and principles](#scope-and-principles)
-- [Architecture at a glance](#architecture-at-a-glance)
-- [Repository map](#repository-map)
-- [AWS production-ready baseline](#aws-production-ready-baseline)
-- [AWS deployment overview](#aws-deployment-overview)
-- [Go-live for finance.causewaygrp.com](#go-live-for-financecausewaygrpcom)
-- [Getting started](#getting-started)
-- [Definition of done](#definition-of-done)
-- [Support](#support)
+**Public Website** — A fully dynamic, API-backed bilingual site (EN/AR with correct RTL) featuring:
+- Homepage with services overview, statistics, and featured resources
+- About, Services, Observatory, Insights, Contact pages
+- Resources library with search, filtering by category/type, and featured highlights
+- Dynamic CMS pages created from the admin panel without code
+- Full SEO: per-page meta tags in both languages, hreflang, sitemap, robots.txt
 
-## Scope and principles
+**Admin Dashboard** — A modern CMS panel for managing all content:
+- Resources CRUD (EN+AR bilingual editor, file upload, draft/publish workflow)
+- Categories management (create, reorder, enable/disable, color-coded)
+- Pages builder (structured blocks, templates, no-code page creation)
+- Health dashboard (system status, broken link checker, translation coverage)
+- Audit log (who changed what and when)
+- Bilingual completion indicators and quality checks
 
-This repository covers:
+## Tech Stack
 
-- Reference architecture for AWS hosting
-- Security, compliance, and auditability standards
-- Operational readiness and incident response expectations
-- Data classification and handling requirements
+| Layer | Technology | Why |
+|-------|-----------|-----|
+| Framework | Next.js 14 (App Router) | SSR for SEO, API routes, unified stack |
+| Language | TypeScript (strict) | Type safety, better DX |
+| Database | PostgreSQL 16 + Prisma | Relational data, full-text search, migrations |
+| Auth | NextAuth.js (JWT) | Role-based access (Admin/Editor) |
+| Styling | Tailwind CSS 3 | RTL support, rapid UI development |
+| i18n | next-intl | EN/AR routing, message bundles |
+| Storage | AWS S3 / MinIO | File uploads with organized structure |
+| Infra | AWS (CloudFront, ECS, RDS, S3) | Cost-effective, scalable |
+| IaC | Terraform | Reproducible infrastructure |
+| CI/CD | GitHub Actions | Automated lint → test → build → deploy |
+| Local Dev | Docker Compose | One-command full stack setup |
 
-Guiding principles:
-
-- Security by default, least privilege everywhere
-- High availability across multiple AZs
-- Automated, auditable infrastructure as code
-- Encrypt in transit and at rest for all sensitive data
-- Observable systems with measurable SLOs
-
-## Architecture at a glance
-
-```
-Users
-  |
-CloudFront + AWS WAF + Shield
-  |
-Application Load Balancer (multi-AZ)
-  |
-Compute (ECS Fargate / EKS / Lambda)
-  |
-Data (Aurora/RDS, DynamoDB, S3) + KMS
-  |
-Observability (CloudWatch, X-Ray, central logs)
-```
-
-## Repository map
+## Project Structure
 
 ```
-docs/
-  ARCHITECTURE.md
-  adr/
-    0000-template.md
-  AWS_PRODUCTION_READINESS.md
-  DATA_CLASSIFICATION.md
-  DEPLOYMENT.md
-  DOMAIN_SETUP.md
-  GO_LIVE_CHECKLIST.md
-  OPERATIONS_RUNBOOK.md
-  REPOSITORY_STANDARDS.md
-.github/
-  ISSUE_TEMPLATE/
-  PULL_REQUEST_TEMPLATE.md
-infrastructure/
-  README.md
+├── src/
+│   ├── app/
+│   │   ├── [locale]/              # Public site (EN/AR)
+│   │   │   ├── page.tsx           # Homepage
+│   │   │   ├── about/             # About page
+│   │   │   ├── services/          # Services page
+│   │   │   ├── observatory/       # Financial Observatory
+│   │   │   ├── insights/          # Insights/blog
+│   │   │   ├── contact/           # Contact form
+│   │   │   ├── resources/         # Resources with search/filter
+│   │   │   └── [slug]/            # Dynamic CMS pages
+│   │   ├── admin/                 # Admin panel
+│   │   │   ├── login/             # Auth page
+│   │   │   ├── dashboard/         # Stats + quality indicators
+│   │   │   ├── resources/         # CRUD with bilingual tabs
+│   │   │   ├── categories/        # Reorder + enable/disable
+│   │   │   ├── pages/             # Block builder + templates
+│   │   │   ├── health/            # System health + link checker
+│   │   │   ├── audit/             # Activity log
+│   │   │   └── settings/          # Platform config
+│   │   └── api/                   # REST API
+│   │       ├── auth/              # NextAuth handler
+│   │       ├── resources/         # CRUD + public listing
+│   │       ├── categories/        # CRUD
+│   │       ├── pages/             # CRUD
+│   │       ├── upload/            # File upload to S3
+│   │       ├── health/            # Health check + link checker
+│   │       ├── search/            # Full-text search
+│   │       └── audit/             # Audit log query
+│   ├── components/
+│   │   ├── admin/                 # AdminShell sidebar layout
+│   │   └── public/                # Header, Footer
+│   ├── lib/                       # Core utilities
+│   │   ├── prisma.ts              # Database client singleton
+│   │   ├── auth.ts                # NextAuth configuration
+│   │   ├── s3.ts                  # S3 upload/delete/presign
+│   │   ├── audit.ts               # Audit log writer
+│   │   ├── utils.ts               # Slugify, format, localize
+│   │   └── api-helpers.ts         # Auth guards, response helpers
+│   ├── i18n/                      # Translations (EN/AR)
+│   ├── styles/globals.css         # Tailwind + RTL + components
+│   ├── types/                     # TypeScript declarations
+│   └── middleware.ts              # i18n routing
+├── prisma/
+│   ├── schema.prisma              # Full database schema
+│   └── seed.ts                    # Sample data + users
+├── infrastructure/
+│   └── terraform/main.tf          # AWS infrastructure
+├── tests/
+│   ├── setup.ts
+│   └── unit/utils.test.ts
+├── docker-compose.yml             # PostgreSQL + MinIO
+├── Dockerfile                     # Multi-stage production build
+├── .github/workflows/ci.yml       # CI/CD pipeline
+└── docs/
+    ├── architecture.md            # System architecture
+    ├── admin-manual.md            # Admin user guide
+    └── runbook.md                 # Operations runbook
 ```
 
-## AWS production-ready baseline
+## Quick Start (Local Development)
 
-The baseline focuses on these areas:
+### Prerequisites
+- Node.js 22+
+- Docker and Docker Compose
 
-- Account strategy and landing zone
-- Identity and access management (SSO, MFA, least privilege)
-- Network segmentation and zero trust boundaries
-- Edge protection (WAF, Shield, rate limiting)
-- Multi-AZ high availability and autoscaling
-- Encryption with AWS KMS and customer-managed keys
-- Centralized logging, metrics, and alerting
-- Continuous vulnerability management
-- Disaster recovery with defined RTO/RPO targets
+### Setup
 
-Full details live in [docs/AWS_PRODUCTION_READINESS.md](docs/AWS_PRODUCTION_READINESS.md).
+```bash
+# 1. Clone and enter the repo
+git clone <repo-url>
+cd Banking-and-financial-Consultancies
 
-## AWS deployment overview
+# 2. Copy environment config
+cp .env.example .env
 
-This repository defines the standards and reference design. Production
-deployments should:
+# 3. Start database and storage
+docker compose up -d
 
-1. Use IaC for all resources (Terraform/CDK/CloudFormation).
-2. Separate accounts and environments (prod, non-prod, shared services).
-3. Front public traffic with CloudFront, WAF, and an ALB.
-4. Use managed data services with KMS encryption and backups.
-5. Implement centralized logging, metrics, and alerting.
+# 4. Install dependencies and set up database
+npm run setup
 
-Deployment guidance is in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+# 5. Start development server
+npm run dev
+```
 
-## Go-live for finance.causewaygrp.com
+Access:
+- **Public site**: http://localhost:3000
+- **Arabic site**: http://localhost:3000/ar
+- **Admin panel**: http://localhost:3000/admin
+- **MinIO console**: http://localhost:9001 (minioadmin/minioadmin)
 
-To make `finance.causewaygrp.com` live:
+### Default Login Credentials
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | admin@causewaygrp.com | admin123 |
+| Editor | editor@causewaygrp.com | editor123 |
 
-1. Verify domain ownership and DNS access.
-2. Issue an ACM certificate (us-east-1 if using CloudFront).
-3. Deploy CloudFront + WAF in front of the origin (ALB recommended).
-4. Create DNS records pointing the subdomain to CloudFront or ALB.
-5. Complete the go-live checklist and validate TLS, health checks, and logs.
+Change these immediately in production.
 
-See [docs/DOMAIN_SETUP.md](docs/DOMAIN_SETUP.md) and
-[docs/GO_LIVE_CHECKLIST.md](docs/GO_LIVE_CHECKLIST.md).
+## Available Scripts
 
-## Getting started
+```bash
+npm run dev          # Start development server
+npm run build        # Production build
+npm run start        # Start production server
+npm run lint         # Run ESLint
+npm run typecheck    # TypeScript check
+npm run test         # Run tests
+npm run test:coverage # Tests with coverage
 
-1. Read the architecture and readiness documents in `docs/`.
-2. Use the standards to guide IaC implementation (Terraform/CDK/CloudFormation).
-3. Record key decisions using ADRs before implementation.
-4. Validate production readiness using the checklist.
-5. Follow the domain setup guidance before production cutover.
+npm run db:generate  # Generate Prisma client
+npm run db:push      # Push schema to DB
+npm run db:migrate   # Create migration
+npm run db:seed      # Seed sample data
+npm run db:studio    # Open Prisma Studio
 
-## Definition of done
+npm run docker:up    # Start Docker services
+npm run docker:down  # Stop Docker services
 
-Production readiness requires:
+npm run setup        # Full setup (install + generate + push + seed)
+npm run check        # Full check (typecheck + lint + test)
+```
 
-- Security baseline complete and verified
-- Multi-AZ resilience tested
-- Monitoring and alerting in place
-- Backups and restore procedures tested
-- Incident runbook reviewed and approved
-- Change management and release controls documented
+## API Endpoints
 
-## Support
+### Public
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/resources` | List published resources (search, filter, paginate) |
+| GET | `/api/resources/[id]` | Get resource details |
+| GET | `/api/categories` | List enabled categories |
+| GET | `/api/pages` | List published pages |
+| GET | `/api/pages/[id]` | Get page by ID or slug |
+| GET | `/api/search?q=keyword` | Full-text search across resources and pages |
+| GET | `/api/health` | Basic health check |
 
-If you have questions or need clarifications, open an issue with details or
-contact the platform operations team.
+### Admin (requires authentication)
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/resources` | Create resource |
+| PUT | `/api/resources/[id]` | Update resource |
+| DELETE | `/api/resources/[id]` | Delete resource |
+| POST | `/api/categories` | Create category |
+| PUT | `/api/categories/[id]` | Update category |
+| DELETE | `/api/categories/[id]` | Delete category |
+| POST | `/api/pages` | Create page |
+| PUT | `/api/pages/[id]` | Update page |
+| DELETE | `/api/pages/[id]` | Delete page |
+| POST | `/api/upload` | Upload file to S3 |
+| GET | `/api/health` | Detailed health (with x-admin header) |
+| POST | `/api/health` | Run broken link checker |
+| GET | `/api/audit` | Query audit logs |
+
+## Database Schema
+
+8 models covering the full platform:
+
+- **User** — Admin/Editor accounts with bcrypt passwords
+- **Resource** — Bilingual resources with type, category, tags, file, SEO fields
+- **Category** — Hierarchical categories with ordering and enable/disable
+- **Page** — CMS pages with structured blocks, templates, SEO
+- **SiteSetting** — Key-value bilingual site configuration
+- **FileUpload** — Upload tracking with S3 paths
+- **AuditLog** — Who changed what and when
+- **LinkCheck** — Broken link tracking for external URLs
+
+## Deployment
+
+### CI/CD Pipeline (GitHub Actions)
+1. **Lint and Typecheck** — ESLint + TypeScript validation
+2. **Test** — Jest with PostgreSQL service container
+3. **Build** — Next.js production build
+4. **Deploy Staging** — On push to `develop` branch
+5. **Deploy Production** — On push to `main` branch (with approval gate)
+
+### AWS Services
+| Service | Purpose | Cost Control |
+|---------|---------|-------------|
+| CloudFront | CDN + edge caching | Reduces origin hits |
+| ECS Fargate | Application hosting | Pay-per-use, no idle servers |
+| RDS PostgreSQL | Database | t4g.micro for staging |
+| S3 | File storage + uploads | Lifecycle to IA after 90 days |
+| ECR | Docker image registry | Scan on push |
+| VPC | Network isolation | Single NAT gateway for staging |
+
+### Infrastructure as Code
+```bash
+cd infrastructure/terraform
+terraform init
+terraform plan -var="environment=staging"
+terraform apply
+```
+
+## How to Add Content
+
+### Add a Resource
+1. Go to Admin → Resources → New Resource
+2. Fill English title (required) and Arabic title
+3. Add description and content in both languages
+4. Select type (Report, Whitepaper, etc.) and category
+5. Upload file or provide external URL
+6. Add tags for thematic hub grouping
+7. Fill SEO meta fields
+8. Save as Draft or Publish directly
+
+### Add a Page
+1. Go to Admin → Pages → New Page
+2. Set title, URL slug, and template
+3. Add content blocks (Hero, Text, Cards, CTA, Stats)
+4. Fill both English and Arabic content
+5. Set SEO fields
+6. Toggle "Show in navigation" if desired
+7. Publish when ready
+
+### Manage Categories
+1. Go to Admin → Categories
+2. Create with EN+AR names and color
+3. Reorder using up/down arrows
+4. Enable/disable to show/hide on public site
+
+## Troubleshooting
+
+| Issue | Solution |
+|-------|---------|
+| Cannot connect to DB | Check `docker compose ps`, verify `DATABASE_URL` |
+| Upload fails | Verify MinIO is running, check S3 credentials |
+| Arabic not showing | Check Arabic fields are filled, verify locale routing |
+| Admin login fails | Verify seed ran: `npm run db:seed` |
+| Build errors | Run `npx prisma generate` first |
+| Missing styles | Ensure `npm install` completed |
+
+## Documentation
+
+- [Architecture](docs/architecture.md) — System design and technical decisions
+- [Admin Manual](docs/admin-manual.md) — Guide for admin panel users
+- [Operations Runbook](docs/runbook.md) — Deployment, backups, monitoring
+
+## License
+
+Proprietary — CauseWay Financial Consulting. All rights reserved.

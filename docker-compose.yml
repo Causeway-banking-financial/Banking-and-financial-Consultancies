@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:16-alpine
+    container_name: causeway-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: causeway
+      POSTGRES_PASSWORD: causeway_dev
+      POSTGRES_DB: causeway_db
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U causeway -d causeway_db']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MinIO (S3-compatible storage for local dev)
+  minio:
+    image: minio/minio:latest
+    container_name: causeway-minio
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MinIO bucket setup
+  minio-setup:
+    image: minio/mc:latest
+    container_name: causeway-minio-setup
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 minioadmin minioadmin;
+      mc mb local/causeway-uploads --ignore-existing;
+      mc anonymous set download local/causeway-uploads;
+      echo 'Bucket ready';
+      exit 0;
+      "
+
+volumes:
+  postgres_data:
+  minio_data:
