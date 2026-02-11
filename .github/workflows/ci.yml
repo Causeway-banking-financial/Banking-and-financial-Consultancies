@@ -96,7 +96,11 @@ jobs:
           docker push ${{ vars.ECR_REGISTRY }}/causeway-app:staging-${{ github.sha }}
       - name: Deploy to ECS
         run: |
-          aws ecs update-service --cluster causeway-staging --service causeway-app --force-new-deployment
+          TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition causeway-staging-app --query 'taskDefinition' --output json)
+          NEW_TASK_DEF=$(echo $TASK_DEFINITION | jq --arg IMAGE "${{ vars.ECR_REGISTRY }}/causeway-app:staging-${{ github.sha }}" '.containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)')
+          NEW_TASK_INFO=$(aws ecs register-task-definition --cli-input-json "$NEW_TASK_DEF")
+          NEW_REVISION=$(echo $NEW_TASK_INFO | jq -r '.taskDefinition.taskDefinitionArn')
+          aws ecs update-service --cluster causeway-staging --service causeway-app --task-definition $NEW_REVISION
 
   deploy-production:
     name: Deploy to Production
@@ -120,7 +124,8 @@ jobs:
           docker push ${{ vars.ECR_REGISTRY }}/causeway-app:prod-${{ github.sha }}
       - name: Deploy to ECS
         run: |
-          aws ecs update-service --cluster causeway-prod --service causeway-app --force-new-deployment
-      - name: Run database migrations
-        run: |
-          npx prisma migrate deploy
+          TASK_DEFINITION=$(aws ecs describe-task-definition --task-definition causeway-prod-app --query 'taskDefinition' --output json)
+          NEW_TASK_DEF=$(echo $TASK_DEFINITION | jq --arg IMAGE "${{ vars.ECR_REGISTRY }}/causeway-app:prod-${{ github.sha }}" '.containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)')
+          NEW_TASK_INFO=$(aws ecs register-task-definition --cli-input-json "$NEW_TASK_DEF")
+          NEW_REVISION=$(echo $NEW_TASK_INFO | jq -r '.taskDefinition.taskDefinitionArn')
+          aws ecs update-service --cluster causeway-prod --service causeway-app --task-definition $NEW_REVISION

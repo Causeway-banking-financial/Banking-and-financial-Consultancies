@@ -46,6 +46,11 @@ variable "db_instance_class" {
   default = "db.t4g.micro"
 }
 
+variable "acm_certificate_arn" {
+  description = "ACM certificate ARN for CloudFront (required for production)"
+  default     = ""
+}
+
 # VPC
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
@@ -164,15 +169,41 @@ resource "aws_security_group" "db" {
   }
 }
 
+resource "aws_security_group" "alb" {
+  name_prefix = "causeway-alb-"
+  vpc_id      = module.vpc.vpc_id
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
 resource "aws_security_group" "app" {
   name_prefix = "causeway-app-"
   vpc_id      = module.vpc.vpc_id
 
   ingress {
-    from_port   = 3000
-    to_port     = 3000
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    from_port       = 3000
+    to_port         = 3000
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb.id]
   }
 
   egress {
@@ -235,6 +266,9 @@ resource "aws_cloudfront_distribution" "main" {
 
   viewer_certificate {
     cloudfront_default_certificate = var.environment == "staging"
+    acm_certificate_arn            = var.environment == "production" ? var.acm_certificate_arn : null
+    ssl_support_method             = var.environment == "production" ? "sni-only" : null
+    minimum_protocol_version       = var.environment == "production" ? "TLSv1.2_2021" : null
   }
 }
 
