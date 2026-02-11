@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Request, Response, NextFunction } from "express";
 import helmet from "helmet";
 import pinoHttp from "pino-http";
 import { logger } from "./logger";
@@ -31,8 +31,17 @@ app.get("/", (_req, res) => {
   res.json({ service: "{{service-name}}", version: process.env.npm_package_version });
 });
 
-app.listen(port, () => {
-  logger.info({ port }, "Service started");
+// Error handling middleware — catches unhandled errors and returns structured JSON
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  logger.error({ err }, "Unhandled error");
+  res.status(500).json({ error: "internal_server_error" });
 });
+
+// Only start the server when run directly (not when imported by tests)
+if (require.main === module) {
+  app.listen(port, () => {
+    logger.info({ port }, "Service started");
+  });
+}
 
 export default app;

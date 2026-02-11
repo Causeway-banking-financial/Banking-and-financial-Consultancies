@@ -1,0 +1,19 @@
+# Production environment configuration
+# Copy this file to terraform.tfvars and fill in your values.
+# DO NOT commit terraform.tfvars to version control.
+
+# ACM certificate ARN for finance.causewaygrp.com
+# Create with: aws acm request-certificate --domain-name finance.causewaygrp.com --validation-method DNS
+acm_certificate_arn = "arn:aws:acm:eu-west-1:PROD_ACCOUNT_ID:certificate/YOUR-PROD-CERT-ID"
+
+# Globally unique suffix for S3 bucket names
+# Must be unique across all AWS accounts worldwide
+# Use a different suffix from nonprod to avoid naming collisions
+s3_bucket_suffix = "your-unique-suffix-prod"
+
+# Email address for CloudWatch alarm notifications
+# An SNS subscription confirmation email will be sent to this address
+alarm_email = "ops@causewaygrp.com"
+
+# Cost centre tag for billing allocation (optional)
+# cost_centre = "banking-financial"

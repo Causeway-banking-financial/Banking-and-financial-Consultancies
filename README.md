@@ -10,6 +10,7 @@ ship a new financial service to production.
 > **Domain:** `finance.causewaygrp.com`
 > **Primary region:** eu-west-1 (Ireland) | **DR region:** eu-west-2 (London)
 > **Compute:** ECS Fargate ([ADR-0001](docs/adr/0001-default-compute-ecs-fargate.md))
+> **Status:** B+ — ready for nonprod deployment ([Technical Review](docs/TECHNICAL_REVIEW.md))
 
 ## Quick links
 
@@ -18,6 +19,7 @@ ship a new financial service to production.
 | Launch a new service | [service-template/](service-template/) |
 | Understand the architecture | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 | Deploy infrastructure | [infrastructure/](infrastructure/) |
+| Full technical review | [docs/TECHNICAL_REVIEW.md](docs/TECHNICAL_REVIEW.md) |
 | Go-live checklist | [docs/GO_LIVE_CHECKLIST.md](docs/GO_LIVE_CHECKLIST.md) |
 | Respond to an incident | [docs/OPERATIONS_RUNBOOK.md](docs/OPERATIONS_RUNBOOK.md) |
 | Prepare for a compliance audit | [docs/COMPLIANCE_MAPPING.md](docs/COMPLIANCE_MAPPING.md) |
@@ -54,15 +56,16 @@ Full diagrams including DR topology and network segmentation:
 
 ## Infrastructure
 
-All infrastructure is Terraform, deployed via GitHub Actions.
+All infrastructure is Terraform (>= 1.5, AWS provider ~> 5.0), deployed via
+GitHub Actions with OIDC authentication (no long-lived keys).
 
 ```
 infrastructure/
   modules/
-    networking/       VPC, 3-tier subnets, NAT, NACLs, flow logs
+    networking/       VPC, 3-tier subnets, NAT, NACLs, flow logs, VPC endpoints
     compute/          ECS Fargate, ALB (TLS 1.3), HTTP-to-HTTPS redirect
-    data/             Aurora PostgreSQL, DynamoDB, S3 (KMS-encrypted)
-    security/         KMS CMK, WAF (OWASP + SQLi + rate limiting), IAM
+    data/             Aurora PostgreSQL (SSL enforced, parameter group), DynamoDB, S3 (KMS + access logging)
+    security/         KMS CMK (rotation enabled), WAF (OWASP + SQLi + rate limiting), IAM
     observability/    CloudWatch dashboard, 5 alarms, SNS notifications
   environments/
     nonprod/          2 AZs, single NAT, relaxed thresholds
@@ -94,20 +97,21 @@ Scaffold a new service with everything included:
 service-template/
   app/
     Dockerfile          Multi-stage, non-root, health check
-    src/server.ts       Express + Helmet + structured logging (pino)
+    src/server.ts       Express + Helmet + structured logging (pino) + error handling
+    .eslintrc.json      TypeScript ESLint configuration
     tsconfig.json       TypeScript strict mode
     jest.config.js      Test config with 80% coverage thresholds
   terraform/
     main.tf             ECS service, ALB target group, ECR, autoscaling
     variables.tf        Service tier (tier-1/2/3) determines infra sizing
+    outputs.tf          Service URL, ECR repo, log group, task role ARN
   .github/workflows/
     ci.yml              Lint > typecheck > test > Docker build > Trivy scan > deploy
   tests/
-    health.test.ts      Health/ready endpoint validation
+    health.test.ts      Health/ready endpoint validation (supertest)
 ```
 
 Usage: copy the template, replace `{{service-name}}`, set `service_tier`, push.
-See [service-template/README.md](service-template/README.md)
 
 ## Security and compliance
 
@@ -118,6 +122,14 @@ See [service-template/README.md](service-template/README.md)
 | Data handling | [DATA_CLASSIFICATION.md](docs/DATA_CLASSIFICATION.md) | 4 tiers: Public, Internal, Confidential, Restricted |
 | Security baseline | [AWS_PRODUCTION_READINESS.md](docs/AWS_PRODUCTION_READINESS.md) | 10-category production readiness checklist |
 | Vulnerability reporting | [SECURITY.md](SECURITY.md) | Contact: security@causewaygrp.com |
+
+### Security hardening (this release)
+
+- Aurora security group: egress removed (databases do not initiate outbound)
+- Aurora parameter group: `rds.force_ssl = 1`, full SQL logging enabled
+- S3 documents bucket: access logging to dedicated log bucket
+- VPC endpoints: S3, DynamoDB (gateway), CloudWatch Logs, Secrets Manager, ECR (interface)
+- VPC flow log IAM: scoped to specific log group (was `Resource: *`)
 
 ### Policy-as-code
 
@@ -150,13 +162,33 @@ See [infrastructure/policy/](infrastructure/policy/)
 
 ## Getting started
 
+### Prerequisites for AWS deployment
+
+You need to provide these values before deploying:
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `acm_certificate_arn` | ACM certificate ARN for your domain | `arn:aws:acm:eu-west-1:123456:certificate/abc-123` |
+| `s3_bucket_suffix` | Globally unique suffix for S3 buckets | `causeway-2026` |
+| `alarm_email` | Email for CloudWatch alarm notifications | `ops@causewaygrp.com` |
+| `cost_centre` | Billing allocation tag (optional, default: `banking-financial`) | `banking-financial` |
+
+GitHub Secrets: `TERRAFORM_PLAN_ROLE_ARN`, `TERRAFORM_APPLY_ROLE_ARN`,
+`TERRAFORM_APPLY_ROLE_ARN_PROD`
+
+Full deployment guide with step-by-step order:
+[docs/TECHNICAL_REVIEW.md, section 4](docs/TECHNICAL_REVIEW.md#4-aws-deployment-prerequisites)
+
 ### For platform engineers (deploy infrastructure)
 
-1. Deploy `infrastructure/shared/ci-cd/` to create state buckets and OIDC roles.
-2. Set GitHub secrets: `TERRAFORM_PLAN_ROLE_ARN`, `TERRAFORM_APPLY_ROLE_ARN`,
+1. Deploy `infrastructure/shared/ci-cd/` locally to create state buckets and
+   OIDC roles.
+2. Request ACM certificate for `finance.causewaygrp.com` and complete DNS validation.
+3. Create `terraform.tfvars` for each environment with the variables above.
+4. Set GitHub secrets: `TERRAFORM_PLAN_ROLE_ARN`, `TERRAFORM_APPLY_ROLE_ARN`,
    `TERRAFORM_APPLY_ROLE_ARN_PROD`.
-3. Create GitHub environments `nonprod` and `production` with protection rules.
-4. Open a PR touching `infrastructure/` — the plan pipeline runs automatically.
+5. Create GitHub environments `nonprod` and `production` with protection rules.
+6. Open a PR touching `infrastructure/` — the plan pipeline runs automatically.
 
 ### For service teams (launch a new service)
 
@@ -189,36 +221,37 @@ A service is production-ready when:
 
 ```
 .
-├── docs/                          Standards and operational documentation
-│   ├── ARCHITECTURE.md            Reference architecture (Mermaid diagrams)
-│   ├── THREAT_MODEL.md            STRIDE-based threat model
-│   ├── COMPLIANCE_MAPPING.md      PCI-DSS, FCA, UK GDPR controls
-│   ├── CHAOS_ENGINEERING.md       Gameday strategy and FIS experiments
+├── docs/                            Standards and operational documentation
+│   ├── TECHNICAL_REVIEW.md          Complete technical review (current state, issues, plan)
+│   ├── ARCHITECTURE.md              Reference architecture (Mermaid diagrams)
+│   ├── THREAT_MODEL.md              STRIDE-based threat model
+│   ├── COMPLIANCE_MAPPING.md        PCI-DSS, FCA, UK GDPR controls
+│   ├── CHAOS_ENGINEERING.md         Gameday strategy and FIS experiments
 │   ├── AWS_PRODUCTION_READINESS.md  10-category production checklist
-│   ├── DATA_CLASSIFICATION.md     4-tier data classification policy
-│   ├── DEPLOYMENT.md              Deployment model and pipeline stages
-│   ├── DOMAIN_SETUP.md            DNS and TLS for finance.causewaygrp.com
-│   ├── GO_LIVE_CHECKLIST.md       Pre-launch validation with acceptance criteria
-│   ├── OPERATIONS_RUNBOOK.md      8 incident procedures with CLI commands
-│   ├── REPOSITORY_STANDARDS.md    Repository setup and workflow standards
-│   └── adr/                       Architecture Decision Records
-├── infrastructure/                Terraform modules and environments
-│   ├── modules/                   Reusable: networking, compute, data, security, observability
-│   ├── environments/              nonprod (2 AZ) and prod (3 AZ) configs
-│   ├── shared/ci-cd/              GitHub OIDC, state buckets, IAM roles
-│   ├── policy/                    12 AWS Config compliance rules
-│   ├── cost-guardrails/           Budgets and anomaly detection
-│   └── chaos-engineering/         AWS FIS experiment templates
-├── service-template/              Scaffold for new services
-│   ├── app/                       Dockerfile, TypeScript server, configs
-│   ├── terraform/                 ECS service module with autoscaling
-│   ├── .github/workflows/         CI/CD pipeline
-│   └── tests/                     Health endpoint tests
-├── backstage/                     Developer portal catalog and templates
-├── .github/workflows/             Platform CI/CD (docs lint, Terraform plan/apply)
-├── SECURITY.md                    Vulnerability reporting policy
-├── CONTRIBUTING.md                Contribution guidelines
-└── .editorconfig                  Code style (2-space indent, LF, UTF-8)
+│   ├── DATA_CLASSIFICATION.md       4-tier data classification policy
+│   ├── DEPLOYMENT.md                Deployment model and pipeline stages
+│   ├── DOMAIN_SETUP.md              DNS and TLS for finance.causewaygrp.com
+│   ├── GO_LIVE_CHECKLIST.md         Pre-launch validation with acceptance criteria
+│   ├── OPERATIONS_RUNBOOK.md        8 incident procedures with CLI commands
+│   ├── REPOSITORY_STANDARDS.md      Repository setup and workflow standards
+│   └── adr/                         Architecture Decision Records
+├── infrastructure/                  Terraform modules and environments
+│   ├── modules/                     Reusable: networking, compute, data, security, observability
+│   ├── environments/                nonprod (2 AZ) and prod (3 AZ) configs
+│   ├── shared/ci-cd/                GitHub OIDC, state buckets, IAM roles
+│   ├── policy/                      12 AWS Config compliance rules
+│   ├── cost-guardrails/             Budgets and anomaly detection
+│   └── chaos-engineering/           AWS FIS experiment templates
+├── service-template/                Scaffold for new services
+│   ├── app/                         Dockerfile, TypeScript server, ESLint, Jest configs
+│   ├── terraform/                   ECS service module with autoscaling + outputs
+│   ├── .github/workflows/           CI/CD pipeline with Trivy SARIF upload
+│   └── tests/                       Health endpoint tests (supertest)
+├── backstage/                       Developer portal catalog and templates
+├── .github/workflows/               Platform CI/CD (docs lint, Terraform plan/apply)
+├── SECURITY.md                      Vulnerability reporting policy
+├── CONTRIBUTING.md                  Contribution guidelines
+└── .editorconfig                    Code style (2-space indent, LF, UTF-8)
 ```
 
 ## Contributing

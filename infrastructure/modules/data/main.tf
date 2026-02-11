@@ -33,12 +33,8 @@ resource "aws_security_group" "aurora" {
     security_groups = [var.ecs_tasks_security_group_id]
   }
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  # No egress rules — databases should not initiate outbound connections.
+  # Aurora only needs to accept inbound from ECS tasks on port 5432.
 
   lifecycle {
     create_before_destroy = true
@@ -46,6 +42,32 @@ resource "aws_security_group" "aurora" {
 
   tags = merge(local.common_tags, {
     Name = "${local.name_prefix}-aurora-sg"
+  })
+}
+
+resource "aws_rds_cluster_parameter_group" "main" {
+  name        = "${local.name_prefix}-aurora-pg15"
+  family      = "aurora-postgresql15"
+  description = "Parameter group for ${local.name_prefix} Aurora cluster"
+
+  parameter {
+    name         = "rds.force_ssl"
+    value        = "1"
+    apply_method = "pending-reboot"
+  }
+
+  parameter {
+    name  = "log_statement"
+    value = "all"
+  }
+
+  parameter {
+    name  = "log_min_duration_statement"
+    value = "1000"
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-aurora-pg15"
   })
 }
 
@@ -58,6 +80,8 @@ resource "aws_rds_cluster" "main" {
   master_username                 = "cbf_admin"
   manage_master_user_password     = true
   master_user_secret_kms_key_id   = var.kms_key_arn
+
+  db_cluster_parameter_group_name = aws_rds_cluster_parameter_group.main.name
 
   db_subnet_group_name   = var.db_subnet_group_name
   vpc_security_group_ids = [aws_security_group.aurora.id]
@@ -204,6 +228,55 @@ resource "aws_s3_bucket_public_access_block" "documents" {
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
+}
+
+# S3 Access Logging
+resource "aws_s3_bucket" "access_logs" {
+  bucket = "${local.name_prefix}-access-logs-${var.s3_bucket_suffix}"
+
+  tags = merge(local.common_tags, {
+    Name             = "${local.name_prefix}-access-logs"
+    DataClassification = "internal"
+  })
+}
+
+resource "aws_s3_bucket_public_access_block" "access_logs" {
+  bucket = aws_s3_bucket.access_logs.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "access_logs" {
+  bucket = aws_s3_bucket.access_logs.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "aws:kms"
+    }
+  }
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "access_logs" {
+  bucket = aws_s3_bucket.access_logs.id
+
+  rule {
+    id     = "expire-old-logs"
+    status = "Enabled"
+
+    expiration {
+      days = 365
+    }
+  }
+}
+
+resource "aws_s3_bucket_logging" "documents" {
+  bucket = aws_s3_bucket.documents.id
+
+  target_bucket = aws_s3_bucket.access_logs.id
+  target_prefix = "documents/"
 }
 
 resource "aws_s3_bucket_lifecycle_configuration" "documents" {

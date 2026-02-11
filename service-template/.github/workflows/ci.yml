@@ -55,13 +55,19 @@ jobs:
         run: docker build -t ${{ env.SERVICE_NAME }}:${{ github.sha }} .
 
       - name: Run Trivy vulnerability scan
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.18.0
         with:
           image-ref: "${{ env.SERVICE_NAME }}:${{ github.sha }}"
           format: "sarif"
           output: "trivy-results.sarif"
           severity: "CRITICAL,HIGH"
           exit-code: "1"
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: "trivy-results.sarif"
 
   deploy:
     name: Deploy to nonprod

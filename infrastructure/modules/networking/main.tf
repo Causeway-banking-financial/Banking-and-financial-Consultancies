@@ -240,8 +240,107 @@ resource "aws_iam_role_policy" "flow_log" {
         "logs:DescribeLogStreams"
       ]
       Effect   = "Allow"
-      Resource = "*"
+      Resource = "${aws_cloudwatch_log_group.flow_log[0].arn}:*"
     }]
+  })
+}
+
+# ------------------------------------------------------------------------------
+# VPC Endpoints — keep AWS API calls within the VPC
+# ------------------------------------------------------------------------------
+data "aws_region" "current" {}
+
+# Gateway endpoints (free, route-table based)
+resource "aws_vpc_endpoint" "s3" {
+  vpc_id       = aws_vpc.main.id
+  service_name = "com.amazonaws.${data.aws_region.current.name}.s3"
+
+  route_table_ids = aws_route_table.private[*].id
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-vpce-s3"
+  })
+}
+
+resource "aws_vpc_endpoint" "dynamodb" {
+  vpc_id       = aws_vpc.main.id
+  service_name = "com.amazonaws.${data.aws_region.current.name}.dynamodb"
+
+  route_table_ids = aws_route_table.private[*].id
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-vpce-dynamodb"
+  })
+}
+
+# Interface endpoints (for ECS/Fargate private networking)
+resource "aws_security_group" "vpc_endpoints" {
+  name_prefix = "${local.name_prefix}-vpce-"
+  vpc_id      = aws_vpc.main.id
+  description = "Security group for VPC interface endpoints"
+
+  ingress {
+    description = "HTTPS from VPC"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-vpce-sg"
+  })
+}
+
+resource "aws_vpc_endpoint" "logs" {
+  vpc_id              = aws_vpc.main.id
+  service_name        = "com.amazonaws.${data.aws_region.current.name}.logs"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = aws_subnet.private[*].id
+  security_group_ids  = [aws_security_group.vpc_endpoints.id]
+  private_dns_enabled = true
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-vpce-logs"
+  })
+}
+
+resource "aws_vpc_endpoint" "secretsmanager" {
+  vpc_id              = aws_vpc.main.id
+  service_name        = "com.amazonaws.${data.aws_region.current.name}.secretsmanager"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = aws_subnet.private[*].id
+  security_group_ids  = [aws_security_group.vpc_endpoints.id]
+  private_dns_enabled = true
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-vpce-secretsmanager"
+  })
+}
+
+resource "aws_vpc_endpoint" "ecr_api" {
+  vpc_id              = aws_vpc.main.id
+  service_name        = "com.amazonaws.${data.aws_region.current.name}.ecr.api"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = aws_subnet.private[*].id
+  security_group_ids  = [aws_security_group.vpc_endpoints.id]
+  private_dns_enabled = true
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-vpce-ecr-api"
+  })
+}
+
+resource "aws_vpc_endpoint" "ecr_dkr" {
+  vpc_id              = aws_vpc.main.id
+  service_name        = "com.amazonaws.${data.aws_region.current.name}.ecr.dkr"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = aws_subnet.private[*].id
+  security_group_ids  = [aws_security_group.vpc_endpoints.id]
+  private_dns_enabled = true
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-vpce-ecr-dkr"
   })
 }
 
